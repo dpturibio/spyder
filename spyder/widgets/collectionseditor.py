@@ -1040,7 +1040,9 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
         data = self.source_model.get_data()
         is_list_instance = isinstance(data, list)
         is_dict_instance = isinstance(data, dict)
-
+        
+        if data and not self.selected_rows():
+            self.selectRow(0)
         def indexes_in_same_row():
             indexes = self.selectedIndexes()
             if len(indexes) > 1:
@@ -1058,7 +1060,7 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
             not self.readonly
         )
         self.edit_action.setEnabled(condition_edit)
-        self.insert_action_above.setEnabled(condition_edit)
+        self.insert_action_above.setEnabled(True)
         self.insert_action_below.setEnabled(condition_edit)
         self.duplicate_action.setEnabled(condition_edit)
         self.rename_action.setEnabled(condition_edit)
@@ -1347,7 +1349,11 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
         # This avoids a segfault in our tests that doesn't happen when
         # removing items manually.
         if not running_under_pytest():
-            self._deselect_index(current_index)
+            if self.source_model._data:
+                self.selectRow(0)
+            else:
+                self._deselect_index(current_index)   
+        #    self._deselect_index(current_index)
 
     def copy_item(self, erase_original=False, new_name=None):
         """Copy item"""
@@ -1399,7 +1405,8 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
             if erase_original:
                 self.remove_values([orig_key])
 
-        self._deselect_index(current_index)
+        #self._deselect_index(current_index)
+        self.selectRow(0)
 
     @Slot()
     def duplicate_item(self):
@@ -1450,6 +1457,7 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
 
         if valid and str(value):
             self.new_value(key, try_to_eval(str(value)))
+            self.selectRow(0)
 
     @Slot()
     def view_item(self):
@@ -1737,11 +1745,11 @@ class CollectionsEditorTableView(BaseTableView):
 
     def new_value(self, key, value):
         """Create new value in data"""
-        index = self.currentIndex()
+        #index = self.currentIndex()
         data = self.source_model.get_data()
         data[key] = value
         self.set_data(data)
-        self._deselect_index(index)
+        #self._deselect_index(index)
 
     def is_list(self, key):
         """Return True if variable is a list or a tuple"""
