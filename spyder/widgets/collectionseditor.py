@@ -1036,13 +1036,21 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
 
     def refresh_menu(self):
         """Refresh context menu"""
+        caller_method = sys._getframe(1).f_code.co_name
+        if caller_method == 'refresh_menu':
+            return
         index = self.currentIndex()
         data = self.source_model.get_data()
         is_list_instance = isinstance(data, list)
         is_dict_instance = isinstance(data, dict)
         
         if data and not self.selected_rows():
-            self.selectRow(0)
+            if caller_method == '__init__':
+                self.selectRow(0)
+                self.over_select_row_button
+                self.__index_clicked = self.model().index(0, 3)
+                index = self.currentIndex()
+
         def indexes_in_same_row():
             indexes = self.selectedIndexes()
             if len(indexes) > 1:
@@ -1350,7 +1358,10 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
         # removing items manually.
         if not running_under_pytest():
             if self.source_model._data:
-                self.selectRow(0)
+                if current_index.row() >= len(self.source_model._data):
+                     self.selectRow(current_index.row() - 1)
+                else:
+                    self.selectRow(current_index.row())
             else:
                 self._deselect_index(current_index)   
         #    self._deselect_index(current_index)
@@ -1406,7 +1417,8 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
                 self.remove_values([orig_key])
 
         #self._deselect_index(current_index)
-        self.selectRow(0)
+        self.selectRow(current_index.row())
+        
 
     @Slot()
     def duplicate_item(self):
@@ -1457,7 +1469,10 @@ class BaseTableView(SpyderWidgetMixin, QTableView):
 
         if valid and str(value):
             self.new_value(key, try_to_eval(str(value)))
-            self.selectRow(0)
+            if below:
+                self.selectRow(index.row())
+            else:
+                self.selectRow(index.row()+1)
 
     @Slot()
     def view_item(self):
