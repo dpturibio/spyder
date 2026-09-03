@@ -1590,8 +1590,29 @@ class DataFrameView(SpyderWidgetMixin, QTableView):
         cols = list(set(cols))  # Remove duplicates
         model = self.model()
         col_labels = [model.header(0, col) for col in cols]
-        self.namespacebrowser.plot(plot_function)
+        if self.is_hist_plottable(model, col_labels):
+            if self.namespacebrowser is None:
+                from spyder.plugins.variableexplorer.widgets.namespacebrowser import (
+                    NamespaceBrowser
+                )
+                NamespaceBrowser(self).plot(plot_function)
+            else:
+                self.namespacebrowser.plot(plot_function)
 
+    def is_hist_plottable(self, model=None, cols=[]):
+        """
+        Validate if selected histogram is plottable
+        """
+        if model is None or not cols:
+            return False
+        try:
+            for col in cols:
+                if not pd.api.types.is_numeric_dtype(model.df[col]) and \
+                   not pd.api.types.is_datetime64_any_dtype(model.df[col]):
+                    return False
+        except:
+            return False
+        return True
 
 class DataFrameHeaderModel(SpyderFontsMixin, QAbstractTableModel):
     """
